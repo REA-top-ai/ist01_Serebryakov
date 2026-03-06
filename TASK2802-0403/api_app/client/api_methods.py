@@ -1,7 +1,7 @@
 import requests as r
 
 BASE_URL = 'https://newsapi.org/v2'
-apikey = "925f63e18e8242a388d64c2b01e448c7"
+apikey = "key"
 
 """def everything(base_url: str, #основа ссылки
                 endpoint: str, # использование в апишке,
