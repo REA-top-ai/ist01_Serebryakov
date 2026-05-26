@@ -1,0 +1,5 @@
+.env/
+__pycache__/
+venv/
+test_kimi.py
+auth_google.json

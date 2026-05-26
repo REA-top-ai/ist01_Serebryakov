@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Pokerdom — Texas Hold'em Analyzer{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center mb-5">
+  <div class="col-lg-9 text-center">
+    <div class="hero-card card border-0 p-5">
+      <div class="mb-3" style="font-size:3rem;line-height:1">
+        <span class="text-danger">♥ ♦</span> <span>♠ ♣</span>
+      </div>
+      <h1 class="display-5 fw-bold text-white mb-3">Texas Hold'em <span class="text-warning">Analyzer</span></h1>
+      <p class="lead text-secondary mb-4 mx-auto" style="max-width:480px">
+        Real-time equity, outs, pot odds — and strategic AI coaching from Kimi K2.6.
+      </p>
+      <div class="d-flex gap-3 justify-content-center flex-wrap">
+        <a href="{{ url_for('analyzer') }}" class="btn btn-warning btn-lg px-5 fw-semibold">
+          <i class="bi bi-calculator me-2"></i>Analyze a Hand
+        </a>
+        <a href="{{ url_for('history') }}" class="btn btn-outline-secondary btn-lg px-4">
+          <i class="bi bi-clock-history me-2"></i>History
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-5">
+  {% for icon, color, title, text in [
+    ('bi-graph-up-arrow','text-warning','Equity Calculator','Monte Carlo simulation for accurate win/tie/lose percentages.'),
+    ('bi-bullseye','text-info','Outs Counter','Every card that improves your hand on flop, turn, or river.'),
+    ('bi-currency-dollar','text-success','Pot Odds','Required equity vs. actual equity for correct call/fold decisions.'),
+    ('bi-robot','text-primary','AI Coach (Kimi K2.6)','Strategic advice with confidence, bluff rating, and aggression score.')
+  ] %}
+  <div class="col-sm-6 col-lg-3">
+    <div class="feature-card card h-100 border-0 text-center p-4">
+      <i class="bi {{ icon }} {{ color }} mb-3" style="font-size:2rem"></i>
+      <h6 class="fw-semibold text-white">{{ title }}</h6>
+      <p class="text-secondary small mb-0">{{ text }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="glass-panel card border-0 p-4 h-100">
+      <h6 class="text-muted text-uppercase small mb-3"><i class="bi bi-bar-chart me-2"></i>Stats</h6>
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-circle"><span class="text-warning fw-bold fs-4">{{ total }}</span></div>
+        <div>
+          <div class="text-white fw-semibold">Hands Analyzed</div>
+          <div class="text-muted small">All time</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="glass-panel card border-0 p-4 h-100">
+      <h6 class="text-muted text-uppercase small mb-3"><i class="bi bi-clock-history me-2"></i>Recent</h6>
+      {% if recent %}
+      <table class="table table-dark table-hover table-sm mb-0 align-middle">
+        <thead><tr class="text-muted small text-uppercase">
+          <th>Hand</th><th>Board</th><th>Win%</th><th>Action</th>
+        </tr></thead>
+        <tbody>
+          {% for r in recent %}
+          <tr>
+            <td class="font-monospace text-warning">{{ r.hole_cards }}</td>
+            <td class="font-monospace text-secondary small">{{ r.board or '—' }}</td>
+            <td><span class="badge {% if r.win >= 60 %}bg-success{% elif r.win >= 40 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ r.win }}%</span></td>
+            <td><span class="badge text-uppercase {% if r.ai_action in ('raise','all_in','bluff') %}bg-success{% elif r.ai_action in ('call','check') %}bg-primary{% else %}bg-danger{% endif %}">{{ r.ai_action or '—' }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="text-end mt-2"><a href="{{ url_for('history') }}" class="small text-muted text-decoration-none">View all <i class="bi bi-arrow-right"></i></a></div>
+      {% else %}
+      <div class="text-center py-4 text-secondary">
+        <i class="bi bi-suit-club-fill display-5 opacity-25"></i>
+        <p class="mt-2 mb-0 small">No hands analyzed yet.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

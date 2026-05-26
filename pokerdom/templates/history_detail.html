@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Hand #{{ record.id }} — Pokerdom{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{{ url_for('history') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+  <h2 class="fw-bold text-white mb-0">Hand #{{ record.id }}</h2>
+  <span class="badge bg-secondary ms-1">{{ record.street|upper }}</span>
+  <span class="text-muted small ms-auto">{{ record.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+</div>
+
+{% macro card_img(code, cls='') %}
+  {% set rank = code[:-1] %}{% set suit = code[-1] %}
+  {% set api = ('0' if rank=='T' else rank) ~ suit|upper %}
+  <img src="https://deckofcardsapi.com/static/img/{{ api }}.png"
+       alt="{{ code }}" class="{{ cls }}" style="border-radius:6px;border:1px solid rgba(255,255,255,.1)"
+       onerror="this.style.display='none'" />
+{% endmacro %}
+
+<div class="row g-4">
+
+  <div class="col-lg-6">
+    <div class="glass-panel card border-0 p-4 h-100">
+      <h6 class="text-muted text-uppercase small letter-spacing mb-3"><i class="bi bi-suit-diamond me-2"></i>Cards</h6>
+      <div class="mb-4">
+        <div class="small text-muted fw-semibold text-uppercase mb-2">Hole Cards</div>
+        <div class="d-flex gap-2">
+          {% for c in record.hole_cards.split() %}{{ card_img(c, 'detail-img') }}{% endfor %}
+        </div>
+      </div>
+      {% if record.board %}
+      <div>
+        <div class="small text-muted fw-semibold text-uppercase mb-2">Board</div>
+        <div class="d-flex gap-2 flex-wrap">
+          {% for c in record.board.split() %}
+          <div class="text-center">
+            {{ card_img(c, 'detail-img') }}
+            <div class="tiny-lbl text-muted mt-1">
+              {% if loop.index<=3 %}Flop {{ loop.index }}{% elif loop.index==4 %}Turn{% else %}River{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <div class="text-muted small fst-italic">Pre-flop — no board cards</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="glass-panel card border-0 p-4 h-100">
+      <h6 class="text-muted text-uppercase small letter-spacing mb-3"><i class="bi bi-graph-up me-2"></i>Equity</h6>
+      <div class="d-flex justify-content-between small text-muted mb-1">
+        <span>Win {{ record.win }}%</span>
+        <span>Tie {{ record.tie }}%</span>
+        <span>Lose {{ record.lose }}%</span>
+      </div>
+      <div class="eq-bar rounded overflow-hidden mb-3" style="height:18px">
+        <div class="eq-win  h-100 d-inline-block" style="width:{{ record.win  }}%"></div>
+        <div class="eq-tie  h-100 d-inline-block" style="width:{{ record.tie  }}%"></div>
+        <div class="eq-lose h-100 d-inline-block" style="width:{{ record.lose }}%"></div>
+      </div>
+      <div class="row g-2 mb-3">
+        {% for val, lbl, color in [
+          (record.hand_name, 'Best Hand', 'text-white'),
+          (record.outs if record.outs is not none else '—', 'Outs', 'text-info'),
+          (('%.1f'|format(record.pot_odds)~'%') if record.pot_odds else '—', 'Pot Odds', 'text-warning'),
+          (record.players, 'Players', 'text-white')
+        ] %}
+        <div class="col-6">
+          <div class="stat-box text-center p-2 rounded">
+            <div class="{{ color }} fw-bold small">{{ val }}</div>
+            <div class="text-muted" style="font-size:.7rem">{{ lbl }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% if record.pot or record.bet %}
+      <div class="small text-muted">
+        {% if record.pot %}<span class="me-3">Pot: <strong class="text-white">${{ '%.2f'|format(record.pot) }}</strong></span>{% endif %}
+        {% if record.bet %}<span>Bet: <strong class="text-white">${{ '%.2f'|format(record.bet) }}</strong></span>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="glass-panel card border-0 p-4">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <h6 class="text-muted text-uppercase small letter-spacing mb-0"><i class="bi bi-robot me-2"></i>AI Recommendation</h6>
+        {% if record.ai_powered %}
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+          <i class="bi bi-stars me-1"></i>Kimi K2.6
+        </span>
+        {% else %}
+        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Rule-based</span>
+        {% endif %}
+        {% set a = (record.ai_action or 'call')|upper %}
+        <span class="badge fs-6 px-3 ms-auto
+          {% if a in ('RAISE','ALL_IN','BLUFF') %}bg-success
+          {% elif a in ('CALL','CHECK','SLOW_PLAY') %}bg-primary
+          {% else %}bg-danger{% endif %}">{{ a }}</span>
+      </div>
+
+      {% if record.ai_confidence is not none %}
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <div class="stat-box p-2 rounded text-center">
+            <div class="text-white fw-bold">{{ record.ai_confidence }}%</div>
+            <div class="text-muted small">Confidence</div>
+          </div>
+        </div>
+        {% if record.ai_bluff is not none %}
+        <div class="col-md-4">
+          <div class="stat-box p-2 rounded text-center">
+            <div class="text-white fw-bold">{{ record.ai_bluff }}/10</div>
+            <div class="text-muted small">Bluff Rating</div>
+          </div>
+        </div>
+        {% endif %}
+        {% if record.ai_aggression is not none %}
+        <div class="col-md-4">
+          <div class="stat-box p-2 rounded text-center">
+            <div class="text-white fw-bold">{{ record.ai_aggression }}/10</div>
+            <div class="text-muted small">Aggression</div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if record.ai_reasoning %}
+      <div class="ai-box p-3 rounded mb-2">
+        <p class="text-secondary mb-0" style="white-space:pre-wrap">{{ record.ai_reasoning }}</p>
+      </div>
+      {% endif %}
+      {% if record.ai_insight %}
+      <div class="small text-info fst-italic mt-2">
+        <i class="bi bi-lightbulb me-1"></i>{{ record.ai_insight }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}History — Pokerdom{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold text-white mb-0">
+      <i class="bi bi-clock-history text-warning me-2"></i>Analysis History
+    </h2>
+    <p class="text-muted mb-0 small">{{ records|length }} hand analyses</p>
+  </div>
+  <a href="{{ url_for('analyzer') }}" class="btn btn-warning btn-sm ms-auto">
+    <i class="bi bi-plus-circle me-1"></i>New Analysis
+  </a>
+</div>
+
+{% if records %}
+
+<div class="row g-3 mb-4">
+  {% set total   = records|length %}
+  {% set avg_win = (records | map(attribute='win') | list | sum / total) | round(1) %}
+  {% set calls   = records | selectattr('ai_action', 'equalto', 'call')  | list | length %}
+  {% set folds   = records | selectattr('ai_action', 'equalto', 'fold')  | list | length %}
+
+  <div class="col-6 col-md-3">
+    <div class="stat-box text-center p-3 rounded glass-panel">
+      <div class="stat-value text-warning">{{ total }}</div>
+      <div class="stat-label text-muted small">Total Hands</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-box text-center p-3 rounded glass-panel">
+      <div class="stat-value text-success">{{ avg_win }}%</div>
+      <div class="stat-label text-muted small">Avg Win Equity</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-box text-center p-3 rounded glass-panel">
+      <div class="stat-value text-info">{{ calls }}</div>
+      <div class="stat-label text-muted small">Calls</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-box text-center p-3 rounded glass-panel">
+      <div class="stat-value text-danger">{{ folds }}</div>
+      <div class="stat-label text-muted small">Folds</div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 glass-panel">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead class="border-bottom border-secondary">
+          <tr class="text-muted small text-uppercase">
+            <th class="ps-4">#</th>
+            <th>Hole Cards</th>
+            <th>Board</th>
+            <th>Street</th>
+            <th>Hand</th>
+            <th>Win%</th>
+            <th>Outs</th>
+            <th>Action</th>
+            <th>AI</th>
+            <th class="pe-4">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr class="history-row">
+            <td class="ps-4 text-muted small">{{ r.id }}</td>
+
+            <td>
+              <div class="d-flex gap-1">
+                {% for card in r.hole_cards.split() %}
+                  {%- set api_rank = '0' if card[0]|upper == 'T' else card[0]|upper -%}
+                  <img src="https://deckofcardsapi.com/static/img/{{ api_rank }}{{ card[1]|upper }}.png"
+                       alt="{{ card }}" class="history-card-img" onerror="this.style.display='none'" />
+                {% endfor %}
+              </div>
+            </td>
+
+            <td>
+              {% if r.board %}
+              <div class="d-flex gap-1">
+                {% for card in r.board.split() %}
+                  {%- set api_rank = '0' if card[0]|upper == 'T' else card[0]|upper -%}
+                  <img src="https://deckofcardsapi.com/static/img/{{ api_rank }}{{ card[1]|upper }}.png"
+                       alt="{{ card }}" class="history-card-img sm" onerror="this.style.display='none'" />
+                {% endfor %}
+              </div>
+              {% else %}
+                <span class="text-muted small">Pre-flop</span>
+              {% endif %}
+            </td>
+
+            <td><span class="badge bg-secondary text-uppercase small">{{ r.street }}</span></td>
+            <td><span class="text-white small">{{ r.hand_name }}</span></td>
+
+            <td>
+              <span class="badge {% if r.win >= 65 %}bg-success{% elif r.win >= 40 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                {{ r.win }}%
+              </span>
+            </td>
+
+            <td class="text-muted small">{{ r.outs if r.outs is not none else '—' }}</td>
+
+            <td>
+              {% set action = (r.ai_action or 'call')|upper %}
+              <span class="badge fw-semibold {% if action in ('RAISE','ALL_IN','BLUFF') %}bg-success{% elif action in ('CALL','CHECK','SLOW_PLAY') %}bg-primary{% else %}bg-danger{% endif %}">
+                {{ action }}
+              </span>
+            </td>
+
+            <td>
+              {% if r.ai_powered %}
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                  <i class="bi bi-stars"></i> AI
+                </span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Rule</span>
+              {% endif %}
+            </td>
+
+            <td class="pe-4 text-muted small text-nowrap">{{ r.created_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% else %}
+
+<div class="card border-0 glass-panel p-5 text-center">
+  <i class="bi bi-suit-club-fill display-3 opacity-25 mb-3"></i>
+  <h5 class="text-white mb-2">No hands analyzed yet</h5>
+  <p class="text-muted mb-4">Go to the Analyzer and evaluate your first hand.</p>
+  <a href="{{ url_for('analyzer') }}" class="btn btn-warning px-5">
+    <i class="bi bi-calculator me-2"></i>Start Analyzing
+  </a>
+</div>
+
+{% endif %}
+{% endblock %}
